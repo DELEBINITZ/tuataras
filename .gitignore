@@ -1,1 +1,9 @@
 .tautaras
+.env
+core/__pycache__/config.cpython-311.pyc
+core/infra/__pycache__/__init__.cpython-311.pyc
+core/__pycache__/server.cpython-311.pyc
+core/infra/__pycache__/_celery.cpython-311.pyc
+core/worker/__pycache__/__init__.cpython-311.pyc
+core/worker/__pycache__/celery_app.cpython-311.pyc
+core/__pycache__/server.cpython-311.pyc

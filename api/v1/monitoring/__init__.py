@@ -1,5 +1,4 @@
 from fastapi import APIRouter
-
 from .health_check import health_router
 
 monitoring_routers = APIRouter()
