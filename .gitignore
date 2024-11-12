@@ -1,1 +1,4 @@
-.tautaras
+/tautaras_server/.env
+tautaras_server/.server_venv
+tautaras_worker/.worker_venv
+**/__pycache__/
