@@ -6,6 +6,7 @@ from celery.exceptions import CeleryError
 from datetime import datetime
 import hashlib
 import logging
+import dateparser
 
 from core.infra.celery.celery_app import celery_app
 from core.models.dto.crawler.reviews import ExtractReviewRequest
@@ -58,7 +59,7 @@ async def extract_reviews(request: ExtractReviewRequest) -> Dict[str, Any]:
         # data for message queue
         data = {
             "url": url,
-            "callback_url": "http://0.0.0.0/api/v1/reviews/ingest",
+            "callback_url": "http://0.0.0.0:80/api/v1/reviews/ingest",
             "platform": platform,
         }
 
@@ -124,24 +125,26 @@ async def ingest_reviews(request: Request):
 
         for review in reviews_data:
             review_hash_input = (
-                review["title"]
-                + review["description"]
-                + str(review["rating"])
-                + review["reviewer"]
-                + review["reviewer_details"].get("location", "")
-                + review["product_name"]
-                + review["site_name"]
+                str(review.get("title", ""))
+                + str(review.get("description", ""))
+                + str(review.get("rating", ""))
+                + str(review.get("reviewer", ""))
+                + str(review.get("reviewer_details", {}).get("location", ""))
+                + str(review.get("product_name", ""))
+                + str(review.get("site_name", ""))
             )
 
             review_id = hashlib.sha256(review_hash_input.encode()).hexdigest()
 
-            # Assign indexed and updated timestamps
             timestamp = datetime.now().isoformat()
             review["review_id"] = review_id
             review["indexed_at"] = timestamp
             review["updated_at"] = timestamp
-            # TODO: add date parser here and add date in database utc format
-            review["published_at"] = "add here"
+            posted_at = dateparser.parse(
+                review.get("posted_at"),
+                settings={"TIMEZONE": "UTC", "RETURN_AS_TIMEZONE_AWARE": True},
+            )
+            review["posted_at"] = posted_at
 
             # Check if the review already exists
             exists = await document_exists("reviews", review_id)

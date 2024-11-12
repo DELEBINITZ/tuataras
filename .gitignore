@@ -2,3 +2,4 @@
 tautaras_server/.server_venv
 tautaras_worker/.worker_venv
 **/__pycache__/
+tautaras_worker/.env

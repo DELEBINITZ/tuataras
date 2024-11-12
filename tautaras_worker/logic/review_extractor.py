@@ -163,6 +163,14 @@ def review_extractor(data: dict):
                             logger.warning(
                                 f"Reviewer location not found for review element at {current_url}"
                             )
+                        try:
+                            posted_at = element.find_element(
+                                By.XPATH, xpaths["posted_at"]
+                            ).text.strip()
+                        except selenium.common.exceptions.NoSuchElementException:
+                            logger.warning(
+                                f"Posted date not found for review element at {current_url}"
+                            )
 
                         # Check if essential fields are missing
                         if not (
@@ -186,6 +194,7 @@ def review_extractor(data: dict):
                                 "rating": rating,
                                 "title": title,
                                 "description": description,
+                                "posted_at": posted_at,
                                 "reviewer": reviewer,
                                 "reviewer_details": {"location": reviewer_location},
                             }

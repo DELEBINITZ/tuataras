@@ -2,14 +2,16 @@ import logging
 from logic.review_extractor import review_extractor
 from celery.exceptions import Reject
 
+from config.env_config import sttgs
+
 logger = logging.getLogger(__name__)
 
 from celery import Celery
 
 celery_app = Celery(
     "tasks",
-    broker="pyamqp://",
-    backend="redis://127.0.0.1:6379",
+    broker=sttgs.get("CELERY_BROKER_URL"),
+    backend=sttgs.get("CELERY_BAKCEND_URI"),
 )
 
 
