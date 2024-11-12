@@ -92,6 +92,7 @@ To start the Fastapi server run the following command
 To start the celery worker run the following command
 - `celery -A tasks worker --loglevel=DEBUG`
 
+NOTE: Running the project using docker compose make sure the env variable are correctly initialized.
 
 # REST API
 
@@ -203,3 +204,11 @@ The REST API to the Fastapi is described below.
         },
         ]
     }
+
+### Limitation
+
+- Limited to Flipkart Review Pages: This server is specifically designed to handle review pages from Flipkart. It may not work with reviews from other platforms unless explicitly stated or extended to support additional sources.
+
+### Future scope
+
+- Although the server is currently limited to Flipkart, future support for other platforms can be easily added by modifying the extraction behavior to accommodate the specific structures of those platforms.
