@@ -6,6 +6,7 @@ from celery.exceptions import CeleryError
 from datetime import datetime
 import hashlib
 import logging
+import dateparser
 
 from core.infra.celery.celery_app import celery_app
 from core.models.dto.crawler.reviews import ExtractReviewRequest
@@ -135,13 +136,15 @@ async def ingest_reviews(request: Request):
 
             review_id = hashlib.sha256(review_hash_input.encode()).hexdigest()
 
-            # Assign indexed and updated timestamps
             timestamp = datetime.now().isoformat()
             review["review_id"] = review_id
             review["indexed_at"] = timestamp
             review["updated_at"] = timestamp
-            # TODO: add date parser here and add date in database utc format
-            review["published_at"] = "add here"
+            posted_at = dateparser.parse(
+                review.get("posted_at"),
+                settings={"TIMEZONE": "UTC", "RETURN_AS_TIMEZONE_AWARE": True},
+            )
+            review["posted_at"] = posted_at
 
             # Check if the review already exists
             exists = await document_exists("reviews", review_id)
