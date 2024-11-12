@@ -100,12 +100,18 @@ async def document_exists(index_name: str, doc_id: str):
         return False  
 
 
-def search_documents(index_name: str, query: dict, size: int = 10):
+async def search_documents(
+    index_name: str, query: dict, from_: int = 0, size: int = 10
+):
     try:
         es_client = get_client()
-        response = es_client.search(index=index_name, body=query, size=size)
-        logger.info(f"Search executed on index '{index_name}' with query '{query}'.")
-        return response["hits"]["hits"]
+        response = es_client.search(
+            index=index_name, body=query, from_=from_, size=size
+        )
+        logger.info(
+            f"Enhanced search executed on index '{index_name}' with query '{query}'."
+        )
+        return response["hits"]["hits"], response["hits"]["total"]["value"]
     except Exception as e:
-        logger.error(f"Error searching documents in index '{index_name}': {e}")
-        return None
+        logger.error(f"Error in enhanced search on index '{index_name}': {e}")
+        return None, 0
