@@ -1,0 +1,51 @@
+version: "3.8"
+
+services:
+  fastapi:
+    build: './tautaras_server'
+    container_name: tautaras_server
+    ports:
+      - "80:80"  
+    depends_on:
+      - redis
+      - rabbit
+      - elasticsearch
+
+  celery_worker:
+    build: './tautaras_worker'
+    container_name: tautaras_worker
+    depends_on:
+      - redis
+      - rabbit
+      - elasticsearch
+
+  redis:
+    image: redis:latest
+    container_name: tautaras_redis
+    ports:
+      - "6379:6379"  
+    expose:
+      - "6379"
+
+  rabbit:
+    hostname: rabbit
+    image: "rabbitmq:3-management"
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.3
+    container_name: tautaras_elasticsearch
+    environment:
+      - discovery.type=single-node
+      - ELASTICSEARCH_USERNAME=elastic
+      - ELASTICSEARCH_PASSWORD=Q7sdN4tYWAG_yh+gVrIN
+    ports:
+      - "9200:9200"
+    expose:
+      - "9200"
