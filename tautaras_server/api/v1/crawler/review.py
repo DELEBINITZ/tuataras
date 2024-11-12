@@ -11,7 +11,7 @@ from typing import Optional
 
 from core.models.dto.crawler.reviews import ReviewDTO, PaginatedResponse
 from core.infra.celery.celery_app import celery_app
-from core.models.dto.crawler.reviews import ExtractReviewRequest
+from core.models.dto.crawler.reviews import ExtractReviewRequest, JobStatusResponse
 from core.utility.crypto import get_hash
 from core.utility.validation import validate_str_params, validate_token_id
 from core.infra.cache.cache_manager import Cache
@@ -106,21 +106,22 @@ async def extract_reviews(request: ExtractReviewRequest) -> Dict[str, Any]:
     return response
 
 
-@reviews_router.get("/status/{job_id}")
-async def get_job_status(job_id: str) -> Dict[str, Any]:
-    response: Dict[str, Any] = {}
+@reviews_router.get("/status/{job_id}", response_model=JobStatusResponse)
+async def get_job_status(job_id: str) -> JobStatusResponse:
+    response = JobStatusResponse(status="unknown")  
+
     try:
         # Get the job status
         result = AsyncResult(job_id)
         print(f"Job ID: {job_id}, Status: {result.state}")
 
-        response["status"] = result.state
-        response["progress"] = result.info.get("progress") if result.info else "unknown"
+        response.status = result.state
+        response.progress = result.info.get("progress") if result.info else "unknown"
 
     except (CeleryError, Exception) as e:
         print(f"Error getting job status for ID: {job_id} - {e}")
-        response["status"] = "error"
-        response["error_message"] = str(e)
+        response.status = "error"
+        response.error_message = str(e)
 
     return response
 
