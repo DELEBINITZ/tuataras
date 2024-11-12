@@ -1,6 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional
-
+from typing import List, Optional, Any
 class ExtractReviewRequest(BaseModel):
     url: str = Field(...)
 
@@ -26,3 +25,9 @@ class PaginatedResponse(BaseModel):
     total_results: int
     total_pages: int
     reviews: List[ReviewDTO]
+
+
+class JobStatusResponse(BaseModel):
+    status: str
+    progress: Optional[Any] = None
+    error_message: Optional[str] = None
