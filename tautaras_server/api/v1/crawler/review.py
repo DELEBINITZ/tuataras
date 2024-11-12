@@ -9,9 +9,11 @@ import logging
 import dateparser
 from typing import Optional
 
+from core.models.dto.crawler.reviews import ReviewDTO, PaginatedResponse
 from core.infra.celery.celery_app import celery_app
 from core.models.dto.crawler.reviews import ExtractReviewRequest
 from core.utility.crypto import get_hash
+from core.utility.validation import validate_str_params, validate_token_id
 from core.infra.cache.cache_manager import Cache
 from api.utility.review_utility import identify_platform, is_safe_url
 from core.infra.elasticstack.elastic import (
@@ -138,7 +140,7 @@ async def ingest_reviews(request: Request):
                 + str(review.get("product_name", ""))
                 + str(review.get("site_name", ""))
             )
-            
+
             # review_id is a hash of the review data to ensure uniqueness and avoid duplicates
             review_id = hashlib.sha256(review_hash_input.encode()).hexdigest()
 
@@ -190,22 +192,28 @@ async def get_reviews(
         query = {"query": {"bool": {"must": []}}}
 
         if token_id:
+            validate_token_id(token_id)
             query["query"]["bool"]["must"].append({"match": {"token_id": token_id}})
-        if product_name:
-            query["query"]["bool"]["must"].append(
-                {"match": {"product_name": product_name}}
-            )
         if site_name:
+            validate_str_params(product_name)
             query["query"]["bool"]["must"].append({"match": {"site_name": site_name}})
         if rating:
+            if not isinstance(rating, (int, float)):
+                raise ValueError("Invalid rating format")
             query["query"]["bool"]["must"].append({"match": {"rating": rating}})
         if reviewer:
+            validate_str_params(reviewer)
             query["query"]["bool"]["must"].append({"match": {"reviewer": reviewer}})
         if product_name:
+            validate_str_params(product_name)
             query["query"]["bool"]["must"].append(
-            {"match": {"product_name": {"query": product_name, "fuzziness": "AUTO"}}}
-        )
-            
+                {
+                    "match": {
+                        "product_name": {"query": product_name, "fuzziness": "AUTO"}
+                    }
+                }
+            )
+
         results, total_hits = await search_documents(
             "reviews", query, from_=from_, size=size
         )
@@ -213,34 +221,34 @@ async def get_reviews(
         if results is None:
             raise HTTPException(status_code=500, detail="Error retrieving reviews")
 
-        # Format the retrieved documents for the response
         formatted_results = [
-            {
-                "review_id": result["_source"]["review_id"],
-                "product_name": result["_source"]["product_name"],
-                "site_name": result["_source"]["site_name"],
-                "rating": result["_source"]["rating"],
-                "title": result["_source"]["title"],
-                "description": result["_source"]["description"],
-                "reviewer": result["_source"]["reviewer"],
-                "reviewer_location": result["_source"]
+            ReviewDTO(
+                review_id=result["_source"]["review_id"],
+                product_name=result["_source"]["product_name"],
+                site_name=result["_source"]["site_name"],
+                rating=result["_source"]["rating"],
+                title=result["_source"]["title"],
+                description=result["_source"]["description"],
+                reviewer=result["_source"]["reviewer"],
+                reviewer_location=result["_source"]
                 .get("reviewer_details", {})
                 .get("location"),
-                "indexed_at": result["_source"]["indexed_at"],
-                "updated_at": result["_source"]["updated_at"],
-            }
+                indexed_at=result["_source"]["indexed_at"],
+                updated_at=result["_source"]["updated_at"],
+            )
             for result in results
         ]
 
-        # Return results with pagination information
-        return {
-            "status": "Success",
-            "page": page,
-            "page_size": size,
-            "total_results": total_hits,
-            "total_pages": (total_hits + size - 1) // size,  
-            "reviews": formatted_results,
-        }
+        response = PaginatedResponse(
+            status="Success",
+            page=page,
+            page_size=size,
+            total_results=total_hits,
+            total_pages=(total_hits + size - 1) // size,
+            reviews=formatted_results,
+        )
+
+        return response.dict()
 
     except Exception as e:
         logger.error(f"Error retrieving reviews: {e}")
